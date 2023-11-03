@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String?
+  password  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  point     Point[]
+  admin     Boolean   @default(false)
+  active    Boolean   @default(true)
+}
+
+model Point {
+  id          Int        @id @default(autoincrement())
+  active      Boolean    @default(true)
+  userId      Int
+  user        User       @relation(fields: [userId], references: [id])
+  latitude    Float
+  longitude   Float
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+  title       String
+  description String?
+  urlImage    UrlImage[]
+  url         String?
+  year        Int?
+  typePointId Int
+  typePoint   TypePoint  @relation(fields: [typePointId], references: [id])
+}
+
+model TypePoint {
+  id          Int       @id @default(autoincrement())
+  libelle     String
+  description String?
+  icon        String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  point       Point[]
+}
+
+model UrlImage {
+  id        Int       @id @default(autoincrement())
+  pointId   Int
+  point     Point     @relation(fields: [pointId], references: [id])
+  url       String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
