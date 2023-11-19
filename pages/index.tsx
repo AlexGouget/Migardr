@@ -1,4 +1,6 @@
 import dynamic from "next/dynamic";
+import NavBar from "@/components/navigation/NavBar";
+import {useState} from "react";
 
 const MapComponent = dynamic(
     () => import('@/components/mapComponent'),
@@ -7,7 +9,15 @@ const MapComponent = dynamic(
 
 
 function Index() {
-    return <MapComponent />
+
+    const [feature, setFeature] = useState<any>(null)
+
+
+
+    return ( <main className="flex min-h-screen flex-col items-center justify-between">
+                 <NavBar setFeature={setFeature} />
+                 <MapComponent feature={feature} />
+             </main>)
 }
 
 export default Index
