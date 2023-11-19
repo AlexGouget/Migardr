@@ -15,7 +15,7 @@ import debounce from 'lodash/debounce';
 
 
 
-export default function NavBar({setFeature}: { setFeature: (feature: any) => void }) {
+export default function NavBar({setFeature}: { setFeature?: (feature?: any) => void }) {
     const [showModal, setShowModal] = useState(false)
     const [loading, setLoading] = useState(false)
     const [options, setOptions] = useState([]);
@@ -103,16 +103,16 @@ export default function NavBar({setFeature}: { setFeature: (feature: any) => voi
 
     const handleSelect = (value: any, option:any) => {
         // Récupérer et transmettre l'objet feature complet
-        setFeature(option.feature);
+       if(setFeature) setFeature(option.feature);
     };
 
     return (
 
-        <div className="navbar bg-base-100 z-40">
+        <div className="h-2/6 navbar bg-base-100 z-40 shadow-lg">
             <Modal showModal={showModal} content={<LoginModalContent closeModal={handleClose}/>} handleClose={handleClose}/>
             <div className="navbar-start">
                 <div className="p-2 pl-5 pr-5 flex-1">
-                    <a className="text-xl text-black">
+                    <a href={'/'} className="text-xl text-black">
                         <img className="max-h-12 " src={'/assets/image/Midgard.png'} alt={'logo midgard'}/>
                     </a>
                 </div>

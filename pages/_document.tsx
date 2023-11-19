@@ -4,10 +4,6 @@ import Document, { Head, Html, Main, NextScript } from 'next/document';
 import type { DocumentContext } from 'next/document';
 import AuthProvider from "@/provider/auth/AuthContext";
 import {Metadata} from "next";
-
-
-
-
 const MyDocument = () => (
     <Html lang="en">
         <Head>
@@ -19,8 +15,10 @@ const MyDocument = () => (
         </Head>
 
         <body>
-        <Main />
-        <NextScript />
+
+                <Main />
+                <NextScript />
+
         </body>
     </Html>
 );

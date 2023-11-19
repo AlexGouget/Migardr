@@ -9,7 +9,6 @@ const MapInteraction = ({ feature }:{feature :any}) => {
 
     useEffect(() => {
         if (feature) {
-            console.log('coordonnatre', [feature.geometry.coordinates[0], feature.geometry.coordinates[1]]);
             map.setView([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], 10);
         }
     }, [feature, map]);
@@ -18,10 +17,12 @@ const MapInteraction = ({ feature }:{feature :any}) => {
 };
 
 
-export default function MapComponent({feature}:{feature:any}) {
+
+export default function MapComponent({feature, openDrawer}: { feature?: any, openDrawer: (id: number) => void }) {
     const {point, error, isLoading} = usePoint()
 
-    const createMarker = (point: any) => {
+    const CreateMarker = ({point}: { point: any }) => {
+        const map = useMap();
         const svgIcon = L.icon({
             iconUrl: `/assets/svg/${point.typepoint.icon}`,
             iconSize: [38, 38],
@@ -31,22 +32,38 @@ export default function MapComponent({feature}:{feature:any}) {
             shadowAnchor: [22, 94],
         })
 
-
         return (
-            <Marker icon={svgIcon} position={[point.latitude, point.longitude]}>
+            <Marker
+                icon={svgIcon}
+                position={[point.latitude, point.longitude]}
+                eventHandlers={{
+                    click: () => {
+                        map.setView([point.latitude, point.longitude-6], 6);
+                        openDrawer(point.id)
+
+                    },
+                    //open popup when marker is hover
+                    mouseover: (e) => {
+                        e.target.openPopup();
+                    },
+                    //close popup when marker is not hover
+                    mouseout: (e) => {
+                        e.target.closePopup();
+                    },
+                }}
+            >
                 <Popup>
-                    {point.title}  - {point.year} ({point.bc?"BC":'AC'})
+                    {point.title} - {point.year} ({point.bc ? "BC" : "AC"})
                 </Popup>
             </Marker>
-        )
-    }
+        );
+    };
+
 
     const generateMarker = () => {
-        if(!point) return
-        return point.map((point: any) => {
-            return createMarker(point)
-        })
-    }
+        if (!point) return null;
+        return point.map((p: { id: React.Key | null | undefined; }) => <CreateMarker key={p.id} point={p} />);
+    };
 
     return (
         <div className='w-full h-full z-0 absolute'>

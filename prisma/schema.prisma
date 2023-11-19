@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// TODO relatedPoint
+
 model point {
   id            Int        @id @default(autoincrement())
   active        Boolean    @default(true)
@@ -14,8 +16,10 @@ model point {
   latitude      Float
   longitude     Float
   createdAt     DateTime   @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime?
   deletedAt     DateTime?
+  // content Text
+  content       String     @db.Text
   title         String
   yearDiscovery Int
   description   String?
@@ -23,8 +27,9 @@ model point {
   bc            Boolean
   year          Int?
   typePointId   Int
+  slug          String     @unique(map: "Point_slug_key") @db.VarChar(255)
   typepoint     typepoint  @relation(fields: [typePointId], references: [id], map: "Point_typePointId_fkey")
-  user          User       @relation(fields: [userId], references: [id], map: "Point_userId_fkey")
+  user          user       @relation(fields: [userId], references: [id], map: "Point_userId_fkey")
   urlimage      urlimage[]
 
   @@index([typePointId], map: "Point_typePointId_fkey")
@@ -37,7 +42,7 @@ model typepoint {
   description String?
   icon        String
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime?
   deletedAt   DateTime?
   point       point[]
 }
@@ -46,16 +51,18 @@ model urlimage {
   id        Int       @id @default(autoincrement())
   pointId   Int
   url       String
+  filename  String
+  mimetype  String
   createdAt DateTime  @default(now())
-  updatedAt DateTime
+  updatedAt DateTime?
   deletedAt DateTime?
   point     point     @relation(fields: [pointId], references: [id], map: "UrlImage_pointId_fkey")
 
   @@index([pointId], map: "UrlImage_pointId_fkey")
 }
 
-model Account {
-  id                String  @id @default(cuid())
+model account {
+  id                String  @id
   userId            String
   type              String
   provider          String
@@ -67,25 +74,28 @@ model Account {
   scope             String?
   id_token          String? @db.Text
   session_state     String?
+  user              user    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Account_userId_fkey")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
+  @@unique([provider, providerAccountId], map: "Account_provider_providerAccountId_key")
+  @@index([userId], map: "Account_userId_fkey")
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
+model session {
+  id           String   @id
+  sessionToken String   @unique(map: "Session_sessionToken_key")
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Session_userId_fkey")
+
+  @@index([userId], map: "Session_userId_fkey")
 }
 
-model User {
+model user {
   id            String    @id @default(cuid())
-  name          String    @unique
-  email         String    @unique
+  email         String    @unique(map: "User_email_key")
+  name          String    @unique(map: "User_name_key")
   password      String
+  description   String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime?
   deletedAt     DateTime?
@@ -93,15 +103,15 @@ model User {
   active        Boolean   @default(true)
   emailVerified DateTime?
   image         String?
-  accounts      Account[]
-  sessions      Session[]
+  account       account[]
   point         point[]
+  session       session[]
 }
 
-model VerificationToken {
+model verificationtoken {
   identifier String
-  token      String   @unique
+  token      String   @unique(map: "VerificationToken_token_key")
   expires    DateTime
 
-  @@unique([identifier, token])
+  @@unique([identifier, token], map: "VerificationToken_identifier_token_key")
 }
