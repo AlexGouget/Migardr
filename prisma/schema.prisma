@@ -18,7 +18,8 @@ model point {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime?
   deletedAt     DateTime?
-  // content Text
+  coverImageId  Int?       @unique
+  coverImage    urlimage?  @relation("PointToCoverImage", fields: [coverImageId], references: [id])
   content       String     @db.Text
   title         String
   yearDiscovery Int
@@ -30,7 +31,7 @@ model point {
   slug          String     @unique(map: "Point_slug_key") @db.VarChar(255)
   typepoint     typepoint  @relation(fields: [typePointId], references: [id], map: "Point_typePointId_fkey")
   user          user       @relation(fields: [userId], references: [id], map: "Point_userId_fkey")
-  urlimage      urlimage[]
+  urlimage      urlimage[] @relation("PointToUrlImage")
 
   @@index([typePointId], map: "Point_typePointId_fkey")
   @@index([userId], map: "Point_userId_fkey")
@@ -48,15 +49,17 @@ model typepoint {
 }
 
 model urlimage {
-  id        Int       @id @default(autoincrement())
-  pointId   Int
-  url       String
-  filename  String
-  mimetype  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime?
-  deletedAt DateTime?
-  point     point     @relation(fields: [pointId], references: [id], map: "UrlImage_pointId_fkey")
+  id          Int       @id @default(autoincrement())
+  pointId     Int
+  url         String
+  filename    String
+  mimetype    String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime?
+  deletedAt   DateTime?
+  point       point?    @relation("PointToUrlImage", fields: [pointId], references: [id])
+  coverPoint  point?    @relation("PointToCoverImage")
 
   @@index([pointId], map: "UrlImage_pointId_fkey")
 }

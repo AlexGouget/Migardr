@@ -15,6 +15,9 @@ const config: Config = {
             serif: ['Inter', 'sans-serif'],
             mono: ['Inter', 'sans-serif'],
         },
+        backgroundColor: {
+
+        },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic':

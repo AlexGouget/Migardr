@@ -37,6 +37,18 @@ async function main() {
         const TOTAL_PTS = 20
         const totalUsers = await prisma.user.count()
         for(let i = 0 ; i < TOTAL_PTS; i++) {
+                const numberOfImages = Math.floor(Math.random() * 3) + 1;
+                let images = [];
+                for (let i = 0; i < numberOfImages; i++) {
+                        images.push( {
+                                url: '/uploads/default.jpg',
+                                filename: 'default.jpg',
+                                mimetype: 'image/jpeg'
+                        },);
+                }
+
+
+
                 await prisma.point.create({
                         // @ts-ignore
                         data: {
@@ -54,11 +66,8 @@ async function main() {
                                 year: faker.date.past().getFullYear(),
                                 bc:  Math.random() >= 0.5,
                                 urlimage: {
-                                        create: {
-                                                url: '/uploads/default.jpg',
-                                                filename: 'default.jpg',
-                                                mimetype: 'image/jpeg'
-                                        }
+                                        //random 1 à 3 images
+                                        create: images
                                 },
                                 slug: faker.lorem.slug(5),
                                 typepoint: {

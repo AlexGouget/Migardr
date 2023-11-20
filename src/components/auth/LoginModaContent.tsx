@@ -2,7 +2,7 @@ import {useSession} from "next-auth/react";
 import {useEffect, useState} from "react";
 import Login from "@/components/auth/Login";
 import Register from "@/components/auth/Register";
-import Add from "@/components/add/Add";
+import Add from "@/components/ad/Add";
 
 export default function LoginModalContent({closeModal}:{closeModal:()=>void}){
     const { data: session } = useSession()

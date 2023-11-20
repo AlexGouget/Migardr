@@ -12,10 +12,11 @@ import {Button, Form, Input, Space, AutoComplete} from "antd";
 import Search from "antd/es/input/Search";
 import {BiLocationPlus, BiPlusCircle} from "react-icons/bi";
 import debounce from 'lodash/debounce';
+import CreatePointForm from "@/components/point/CreatePointForm";
 
 
 
-export default function NavBar({setFeature}: { setFeature?: (feature?: any) => void }) {
+export default function NavBar({setFeature, createPoint}:{setFeature:(feature:any)=>void, createPoint:()=>void}) {
     const [showModal, setShowModal] = useState(false)
     const [loading, setLoading] = useState(false)
     const [options, setOptions] = useState([]);
@@ -25,6 +26,7 @@ export default function NavBar({setFeature}: { setFeature?: (feature?: any) => v
     const handleClose = () => {
         setShowModal(false)
     }
+
 
 
     const debouncedSearchLocation = useCallback(
@@ -83,7 +85,7 @@ export default function NavBar({setFeature}: { setFeature?: (feature?: any) => v
         return (
             <div className="flex justify-end flex-1 px-2">
                 <div className="flex items-center gap-4">
-                    <button className=" rounded-btn transition ease-in-out delay-150 hover:-translate-y-1 hover:scale-110  duration-300"><BiLocationPlus  size={30} /></button>
+                    <button onClick={()=>{createPoint()}} className=" rounded-btn transition ease-in-out delay-150 hover:-translate-y-1 hover:scale-110  duration-300"><BiLocationPlus  size={30} /></button>
                     <div className="dropdown dropdown-bottom dropdown-end">
                         <button><FaUserCircle tabIndex={0} size={30}/></button>
                         <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
@@ -107,8 +109,7 @@ export default function NavBar({setFeature}: { setFeature?: (feature?: any) => v
     };
 
     return (
-
-        <div className="h-2/6 navbar bg-base-100 z-40 shadow-lg">
+        <div className="h-2/6 navbar z-40">
             <Modal showModal={showModal} content={<LoginModalContent closeModal={handleClose}/>} handleClose={handleClose}/>
             <div className="navbar-start">
                 <div className="p-2 pl-5 pr-5 flex-1">
@@ -122,8 +123,10 @@ export default function NavBar({setFeature}: { setFeature?: (feature?: any) => v
                     <AutoComplete
                         onSelect={handleSelect}
                         options={options}
+                        children={<Input className={'rounded-full'} size="large" placeholder="Place, city, country, discovery..."  />}
                         autoClearSearchValue
                         backfill
+                        suffixIcon={loading && <span className="mr-5 loading loading-dots loading-sm"></span>}
                         popupClassName={'w-full'}
                         onSearch={(e)=>{
                         setLoading(true)
@@ -131,11 +134,10 @@ export default function NavBar({setFeature}: { setFeature?: (feature?: any) => v
                         debouncedSearchLocation(e)
                     }}
                         allowClear
-                        placeholder="City, object etc"
                         className="input-bordered w-full rounded-full"
                         />
-                    <Button icon={<FaSearchLocation />} loading={loading} className="rounded-full">
-                    </Button>
+                    {/*<Button icon={<FaSearchLocation />} loading={loading} className="rounded-full">*/}
+                    {/*</Button>*/}
                 </Space.Compact>
             </div>
             <div className="navbar-end">
