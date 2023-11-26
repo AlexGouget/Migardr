@@ -14,7 +14,6 @@ export class PointService {
 
     async getPointById(id: number) {
         if(!id && typeof id !== 'number') return this.res.status(400).json({message: 'id is required or invalid'})
-
         try{
             const resut = await this.prisma.point.findUnique({
                 where: {id: id},
@@ -62,26 +61,6 @@ export class PointService {
         }catch (e) {
             return this.res.status(500).json({message: 'Error while fetching point'})
         }
-    }
-
-    async getAll() {
-      const point = await this.prisma.point.findMany({
-            select: {
-                id: true,
-                title: true,
-                latitude: true,
-                longitude: true,
-                description: true,
-                typepoint: {
-                    select: {
-                        libelle: true,
-                        icon: true
-                    }
-                }
-            }
-        });
-
-      return this.res.status(200).json(point)
     }
 
     async createPoint(point : point) {

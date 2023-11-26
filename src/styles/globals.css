@@ -20,6 +20,18 @@ h1 {
     @apply text-2xl font-bold;
 }
 
+.ant-select-selector{
+    @apply rounded-full !important;
+}
+.ant-picker {
+    @apply rounded-full !important;
+}
+
+.ant-switch-inner-unchecked {
+    /*@apply text- !important;*/
+    color: rgba(0, 0, 0, 0.88) !important;
+}
+
 /*body {*/
 /*  color: rgb(var(--foreground-rgb));*/
 /*  background: linear-gradient(*/

@@ -19,7 +19,6 @@ export default function DrawerPointContent({id}:{id:number}) {
 
     const {data:item ,error, isLoading, } = useSWR(id ? `/api/point/${id}` : null, fetcher)
 
-
     if(!item) return (<div className='h-full w-full flex justify-center align-middle'>No data</div>)
 
     if(isLoading) return (<div className='h-full w-full flex justify-center align-middle'><Spinner /></div>)

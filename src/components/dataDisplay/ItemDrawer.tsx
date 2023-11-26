@@ -1,17 +1,20 @@
-import {Button, Drawer, Space} from "antd";
+import {Button, Drawer, Space , Typography} from "antd";
 import {CloseOutlined} from "@ant-design/icons";
 import React, {useRef} from "react";
 
-export default function ItemDrawer({open, content, closeDrawer}:{open:boolean, content:any, closeDrawer:()=>void}) {
+const {Title} = Typography
+
+export default function ItemDrawer({open, content, closeDrawer, title}:{open:boolean, content:any, closeDrawer:any, title:string|null}) {
     return (
 
         <Drawer
-            title={<div className='w-full flex justify-end gap-5'>
-                <button onClick={closeDrawer}>
+            title={<div className='w-full flex justify-between gap-5 align-top'>
+                <Title level={3}>{title}</Title>
+                <button className='h-2' onClick={closeDrawer}>
                     <CloseOutlined />
-            </button>
+                </button>
 
-        </div>}
+              </div>}
             placement={'left'}
             className='h-5/6'
             onClose={closeDrawer}

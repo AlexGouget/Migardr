@@ -36,7 +36,7 @@ export default function Page({ post }:{post:any}){
     const postObject = JSON.parse(post);
     return (
         <div>
-            <Navbar />
+            <Navbar createPoint={()=>{}}  setFeature={()=>{}}/>
             <h1>{postObject.name}</h1>
             <p>{postObject.description}</p>
         </div>

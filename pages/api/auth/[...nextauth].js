@@ -2,6 +2,8 @@ import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import {PrismaAdapter} from "@auth/prisma-adapter";
 import {PrismaClient} from "@prisma/client";
+import {UserModel} from "@/model/user.model";
+import {HashPassword} from "@/utils/hashPassword";
 
 const prisma =  new PrismaClient()
 
@@ -29,66 +31,16 @@ export const authOptions = {
                                     rememberMe: {  label: "Remember me", type: "checkbox" }
                                 },
                                 async authorize(credentials, req) {
-                                        //check if we have a user and password
-                                        if(!credentials.username || !credentials.password) return null
-
-
-                                    const  hashPassword = async (password) => {
-                                        // Encoder le mot de passe en Uint8Array
-                                        const encoder = new TextEncoder();
-                                        const data = encoder.encode(password);
-
-                                        // Hacher le mot de passe avec SHA-256
-                                        const hash = await crypto.subtle.digest('SHA-256', data);
-
-                                        // Convertir le résultat en chaîne hexadécimale
-                                        return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+                                     if(!credentials.username || !credentials.password) return false
+                                    try{
+                                        const user = await UserModel.findUserbyNameOrEmail(credentials.username)
+                                        if (!user) return false;
+                                        const isValidUser = await user.validatePassword(credentials.password)
+                                        if (!isValidUser) return null;
+                                        return user
+                                    }catch (e) {
+                                        console.log(e)
                                     }
-
-
-                                    //check if user exist
-                                    let user = await prisma.user.findUnique({
-                                                                                where: {
-                                                                                    name: credentials.username,
-                                                                                },
-                                                                                select: {
-                                                                                    id: true,
-                                                                                    name: true,
-                                                                                    email: true,
-                                                                                    password: true,
-                                                                                    image: true,
-                                                                                }
-                                                                            });
-
-                                    if (!user) {
-                                        user = await prisma.user.findUnique({
-                                                                                where: {
-                                                                                    email: credentials.username,
-                                                                                },
-                                                                                select: {
-                                                                                    id: true,
-                                                                                    name: true,
-                                                                                    email: true,
-                                                                                    password: true,
-                                                                                    image: true,
-                                                                                }
-                                                                            });
-                                    }
-
-                                         if (!user) return null;
-                                         console.log(user)
-                                        if(user.password !== await hashPassword(credentials.password)) return null
-
-                                        //add user to session
-
-
-
-                                        return {
-                                            id: user.id,
-                                            name: user.name,
-                                            email: user.email,
-                                            image: user.image,
-                                        }
                                 }
                             })
     ],
@@ -109,6 +61,7 @@ export const authOptions = {
                     email: token.email,
                     name: token.name,
                     image: token.image,
+                    description: token.description,
                 }
             }
         },
@@ -120,6 +73,7 @@ export const authOptions = {
                     name: user.name,
                     email: user.email,
                     image: user.image,
+                    description: user.description,
                 }
             }
 

@@ -10,28 +10,30 @@ datasource db {
 // TODO relatedPoint
 
 model point {
-  id            Int        @id @default(autoincrement())
-  active        Boolean    @default(true)
-  userId        String
-  latitude      Float
-  longitude     Float
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime?
-  deletedAt     DateTime?
-  coverImageId  Int?       @unique
-  coverImage    urlimage?  @relation("PointToCoverImage", fields: [coverImageId], references: [id])
-  content       String     @db.Text
-  title         String
-  yearDiscovery Int
-  description   String?
-  url           String?
-  bc            Boolean
-  year          Int?
-  typePointId   Int
-  slug          String     @unique(map: "Point_slug_key") @db.VarChar(255)
-  typepoint     typepoint  @relation(fields: [typePointId], references: [id], map: "Point_typePointId_fkey")
-  user          user       @relation(fields: [userId], references: [id], map: "Point_userId_fkey")
-  urlimage      urlimage[] @relation("PointToUrlImage")
+  id                    Int        @id @default(autoincrement())
+  active                Boolean    @default(true)
+  userId                String
+  latitude              Float
+  longitude             Float
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime?
+  deletedAt             DateTime?
+  coverImageId          Int?       @unique
+  coverImage            urlimage?  @relation("PointToCoverImage", fields: [coverImageId], references: [id])
+  content               String?    @db.Text
+  title                 String
+  yearDiscovery         Int
+  description           String?
+  url                   String?
+  bc                    Boolean
+  year                  Int?
+  ApproximateYearBefore Int?
+  ApproximateYearAfter  Int?
+  typePointId           Int
+  slug                  String     @unique(map: "Point_slug_key") @db.VarChar(255)
+  typepoint             typepoint  @relation(fields: [typePointId], references: [id], map: "Point_typePointId_fkey")
+  user                  user       @relation(fields: [userId], references: [id], map: "Point_userId_fkey")
+  urlimage              urlimage[] @relation("PointToUrlImage")
 
   @@index([typePointId], map: "Point_typePointId_fkey")
   @@index([userId], map: "Point_userId_fkey")
@@ -97,7 +99,7 @@ model user {
   id            String    @id @default(cuid())
   email         String    @unique(map: "User_email_key")
   name          String    @unique(map: "User_name_key")
-  password      String
+  password      String?
   description   String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime?
@@ -106,6 +108,7 @@ model user {
   active        Boolean   @default(true)
   emailVerified DateTime?
   image         String?
+  roles         String    @default("user")
   account       account[]
   point         point[]
   session       session[]

@@ -4,61 +4,23 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import usePoint from "@/hook/usePoint";
 import DrawerPointContent from "@/components/dataDisplay/DrawerPointContent";
-
-const MapInteraction = ({ feature }: { feature: any }) => {
-    const map = useMap();
-    useEffect(() => {
-        if (feature) {
-            map.setView([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], 10);
-        }
-    }, [feature, map ]);
-
-    return null;
-};
-
-const CreateNewMarker = ({newMarker, retrieveMarker}: { newMarker: boolean, retrieveMarker: (position: any) => void }) => {
-    const map = useMap();
-    const [newMarkerPosition, setNewMarkerPosition] = React.useState<any>(null)
-    const initialPosition = map.getCenter();
-    initialPosition.lng += 12;
-
-    useEffect(() => {
-        retrieveMarker([initialPosition.lat, initialPosition.lng])
-    }, [newMarker]);
-
-    // setNewMarkerPosition(initialPosition)
-    const newMarkerSvg = L.icon({
-        iconUrl: `/assets/svg/newMarker.svg`,
-        iconSize: [70, 70],
-        iconAnchor: [22, 38],
-        popupAnchor: [-3, -76],
-        shadowSize: [68, 95],
-        shadowAnchor: [22, 94],
-        className: 'text-red-500'
-    })
-
-    if(!newMarker) return null
-
-    return (
-        <Marker
-            icon={newMarkerSvg}
-            draggable={true}
-            eventHandlers={{
-                dragend: (e) => {
-                    const newPosition = [e.target.getLatLng().lat, e.target.getLatLng().lng];
-                    setNewMarkerPosition(() => newPosition); // Mettre à jour la position du marqueur
-                    retrieveMarker(newPosition)
-                },
-            }}
-            position={newMarkerPosition ? newMarkerPosition : initialPosition}
-        >
-        </Marker>
-    )
-}
+import debounce from "lodash/debounce";
 
 
 
-export default function MapComponent({feature, openDrawer, newMarker, retrieveMarker}:{feature:any, openDrawer:(content:any)=>void , newMarker:boolean, retrieveMarker:(position:any)=>void}) {
+
+
+export default function MapComponent({
+                                         feature,
+                                         openDrawer,
+                                         newMarker,
+                                         newMarkerPosition,
+                                         retrieveMarker
+}:{feature:any,
+    openDrawer:(content:any, tite:string)=>void,
+    newMarker:boolean,
+    newMarkerPosition:[number, number]|null,
+    retrieveMarker:(position:[number, number])=>void}) {
     const {point, error, isLoading} = usePoint()
 
     const CreateMarker = ({point}: { point: any }) => {
@@ -81,8 +43,9 @@ export default function MapComponent({feature, openDrawer, newMarker, retrieveMa
                 position={[point.latitude, point.longitude]}
                 eventHandlers={{
                     click: () => {
-                        map.setView([point.latitude, point.longitude-6]);
-                        openDrawer(<DrawerPointContent id={point.id} />)
+
+                        map.setView([point.latitude, point.longitude-10],5);
+                        openDrawer(<DrawerPointContent id={point.id} />, point.title)
 
                     },
                     //open popup when marker is hover
@@ -102,11 +65,6 @@ export default function MapComponent({feature, openDrawer, newMarker, retrieveMa
         );
     };
 
-
-
-
-
-
     const generateMarker = () => {
         if (!point) return null;
         return point.map((p: { id: React.Key | null | undefined; }) => <CreateMarker key={p.id} point={p} />);
@@ -114,7 +72,9 @@ export default function MapComponent({feature, openDrawer, newMarker, retrieveMa
 
     return (
         <div className='w-full h-full z-0 absolute'>
-            <MapContainer center={[51.505, -0.09]} zoomControl={false}  zoom={5} style={{ height: '100vh', width: '100%' }}>
+            <MapContainer
+                maxZoom={5}
+                center={getCenterFromLocalStorage() || [51.505, -0.09]} zoomControl={false}  zoom={5} style={{ height: '100vh', width: '100%' }}>
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -122,10 +82,89 @@ export default function MapComponent({feature, openDrawer, newMarker, retrieveMa
                      {generateMarker()}
                 <ZoomControl position="bottomright" />
                 <MapInteraction feature={feature}  />
-                <CreateNewMarker newMarker={newMarker} retrieveMarker={retrieveMarker} />
+                <CreateNewMarker newMarker={newMarker} formMarkerPosition={newMarkerPosition}  sendMarkerToParent={retrieveMarker} />
+
+
 
             </MapContainer>
         </div>
 
 );
+}
+const MapInteraction = ({ feature }: { feature: any }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (feature) {
+            map.setView([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], 10);
+        }
+    }, [feature]);
+
+    map.on('moveend', () => {
+            const center = map.getCenter();
+            saveCenterToLocalStorage(center);
+    });
+
+    //add geojson layer
+
+
+
+
+
+
+    return null;
+};
+
+const saveCenterToLocalStorage = (center: any) => {
+    localStorage.setItem('center', JSON.stringify(center));
+}
+
+const getCenterFromLocalStorage = () => {
+    const center = localStorage.getItem('center');
+    return center ? JSON.parse(center) : null;
+}
+
+
+
+const CreateNewMarker = ({newMarker,formMarkerPosition, sendMarkerToParent}: { newMarker: boolean, formMarkerPosition:[number,number]|null,sendMarkerToParent: (position: any) => void }) => {
+    const map = useMap();
+    const [newMarkerPosition, setNewMarkerPosition] = React.useState<any>(null)
+    const initialPosition = map.getCenter();
+    initialPosition.lng += 12;
+
+    useEffect(() => {
+        sendMarkerToParent([initialPosition.lat, initialPosition.lng])
+    }, [newMarker]);
+
+    useEffect(() => {
+        setNewMarkerPosition(formMarkerPosition)
+    }, [formMarkerPosition]);
+
+    // setNewMarkerPosition(initialPosition)
+    const newMarkerSvg = L.icon({
+        iconUrl: `/assets/svg/newMarker.svg`,
+        iconSize: [64, 90],
+        iconAnchor: [32, 90],
+        popupAnchor: [-3, -76],
+        shadowSize: [68, 95],
+        shadowAnchor: [22, 94],
+        className: 'text-red-500'
+    })
+
+    if(!newMarker) return null
+
+    return (
+        <Marker
+            icon={newMarkerSvg}
+            draggable={true}
+            eventHandlers={{
+                dragend: (e) => {
+                    const newPosition = [e.target.getLatLng().lat, e.target.getLatLng().lng];
+                    setNewMarkerPosition(() => newPosition); // Mettre à jour la position du marqueur
+                    sendMarkerToParent(newPosition)
+                },
+            }}
+            position={newMarkerPosition ? newMarkerPosition : initialPosition}
+        >
+        </Marker>
+    )
 }

@@ -18,8 +18,10 @@ export default function MapPage() {
     const [newMarkerPosition, setNewMarkerPosition] = useState<[number, number] | null>(null)
     const [newMarker, setNewMarker] = useState<any>(false)
     const [id, setId] = useState<number | null>(null)
+    const [title, setTitle] = useState<string | null>(null)
 
-    const openDrawer = (content:any) => {
+    const openDrawer = (content:any, title:string) => {
+        setTitle(title)
         setNewMarker(false)
         setDrawerContent(content)
         setShowDrawer(true)
@@ -30,6 +32,7 @@ export default function MapPage() {
     }
 
     const createPoint = () => {
+        setTitle("New discovery")
         setShowDrawer(true)
         setNewMarker(true)
     }
@@ -43,19 +46,29 @@ export default function MapPage() {
         setNewMarkerPosition(position)
     }
 
+    console.log("mapPage",newMarkerPosition)
+
     return (
         <>
             <NavBar setFeature={setFeature} createPoint={createPoint} />
-            <ItemDrawer open={showDrawer} content={
+            <ItemDrawer
+                title={title}
+                open={showDrawer}
+                content={
                 newMarker
-                    ? <CreatePointForm markerPosition={newMarkerPosition}/>
+                    ? <CreatePointForm markerPosition={newMarkerPosition} setMarkerPosition={setNewMarkerPosition}/>
                     : drawerContent
             } closeDrawer={closeDrawer} />
             <MapComponent
                 feature={feature}
                 openDrawer={openDrawer}
                 newMarker={newMarker}
-                retrieveMarker={retrieveNewMarkerPosition} />
+                newMarkerPosition={newMarkerPosition}
+                retrieveMarker={retrieveNewMarkerPosition}
+
+            />
         </>
     )
 }
+
+

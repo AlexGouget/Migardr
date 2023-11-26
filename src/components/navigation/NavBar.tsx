@@ -105,8 +105,10 @@ export default function NavBar({setFeature, createPoint}:{setFeature:(feature:an
 
     const handleSelect = (value: any, option:any) => {
         // Récupérer et transmettre l'objet feature complet
-       if(setFeature) setFeature(option.feature);
-    };
+        if (setFeature) {
+            setFeature(option.feature)
+        }
+    }
 
     return (
         <div className="h-2/6 navbar z-40">
