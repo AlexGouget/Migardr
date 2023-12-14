@@ -117,9 +117,13 @@ export default function NavBar({setFeature, createPoint}:{setFeature:(feature:an
             <Modal showModal={showModal} content={<LoginModalContent closeModal={handleClose}/>} handleClose={handleClose}/>
             <div className="navbar-start">
                 <div className="p-2 pl-5 pr-5 flex-1">
-                    <a href={'/'} className="text-xl text-black">
-                        <img className="max-h-12 " src={'/assets/image/Midgard.png'} alt={'logo midgard'}/>
-                    </a>
+                    <div className="indicator">
+                        <span className="indicator-item badge badge-primary">alpha</span>
+                        <a href={'/'} className="text-xl text-black">
+                            <img className="max-h-12 " src={'/assets/image/Midgard.png'} alt={'logo midgard'}/>
+                        </a>
+                    </div>
+
                 </div>
             </div>
             <div className="navbar-center w-2/5">
