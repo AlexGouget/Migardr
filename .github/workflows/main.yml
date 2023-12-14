@@ -46,8 +46,14 @@ jobs:
           source: "."
           target: "/home/acreativdesign-keycaps/htdocs/midgard.association-hrafn-hugsadi.fr"
 
+
+
+# pm2 start npm --name "midgard" -- start
       - name: Restart Application
         uses: appleboy/ssh-action@master
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
@@ -58,4 +64,5 @@ jobs:
             npx prisma migrate dev --name init
             npx prisma generate 
             npm run build
-            pm2 start npm --name "midgard" -- start
+            pm2 restart midgard
+            
