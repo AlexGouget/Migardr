@@ -1,18 +1,13 @@
 import React, {useCallback, useRef, useState} from 'react';
 import Modal from "@/components/Modal";
-import Login from "@/components/auth/Login";
 import {getSession, signOut, useSession} from "next-auth/react";
 import {FaPeriscope, FaSearchLocation, FaUserCircle} from "react-icons/fa";
 import LoginModalContent from "@/components/auth/LoginModaContent";
-import {getServerSession} from "next-auth";
-
-// @ts-ignore
-import {authOptions} from "../../../pages/api/auth/[...nextauth]";
 import {Button, Form, Input, Space, AutoComplete} from "antd";
-import Search from "antd/es/input/Search";
+
 import {BiLocationPlus, BiPlusCircle} from "react-icons/bi";
 import debounce from 'lodash/debounce';
-import CreatePointForm from "@/components/point/CreatePointForm";
+
 
 
 
