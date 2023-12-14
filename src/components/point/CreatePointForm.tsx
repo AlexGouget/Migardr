@@ -126,7 +126,7 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
     //swr fetcher
     const {data:category ,error, isLoading, } = useSWR('/api/typepoint', fetcher)
 
-    console.log(category)
+
 
 
     useEffect(() => {
@@ -214,7 +214,7 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
                     placeholder="Select a category"
                     optionFilterProp="children"
                     onChange={(e)=>{
-                        if(e === 25){
+                        if(e === 1){
                             setNewCategory(true)
                         }else{
                             setNewCategory(false)

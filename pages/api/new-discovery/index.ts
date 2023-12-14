@@ -202,7 +202,7 @@ async function checkData(body: any) {
     if (!lat || !lng || !title || !yearDiscovery) throw new Error('Missing required fields');
 
     const {category, newCategory} = body;
-    if (category === '25') {
+    if (category === '1') {
         if (!newCategory)
             throw new Error('Missing required fields');
     }
