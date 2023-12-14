@@ -2,8 +2,6 @@ import React from 'react';
 import { createCache, extractStyle, StyleProvider } from '@ant-design/cssinjs';
 import Document, { Head, Html, Main, NextScript } from 'next/document';
 import type { DocumentContext } from 'next/document';
-import AuthProvider from "@/provider/auth/AuthContext";
-import {Metadata} from "next";
 const MyDocument = () => (
     <Html lang="en">
         <Head>

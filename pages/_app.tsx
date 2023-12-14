@@ -9,7 +9,8 @@ import ToastProvider from "@/provider/toastProvider/ToastProvider";
 
 
 export const metadata: Metadata = {
-    title: 'Midgard Project'
+    title: 'Midgard Project',
+    description: 'Site communautaire de partage archéologique',
 }
 
 export default function MyApp({Component, pageProps: {session, ...pageProps}}: AppProps) {
