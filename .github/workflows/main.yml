@@ -55,6 +55,7 @@ jobs:
           script: |
             cd /home/acreativdesign-keycaps/htdocs/midgard.association-hrafn-hugsadi.fr/        
             npm install 
-            npx prisma generate dev
+            npx prisma migrate dev --name init
+            npx prisma generate 
             npm run build
             pm2 start npm --name "midgard" -- start
