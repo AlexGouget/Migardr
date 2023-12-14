@@ -5,8 +5,7 @@ import * as fs from "fs";
 import sanitizeHtml from 'sanitize-html';
 import prisma from "../../../prisma/db";
 import {getSession} from "next-auth/react";
-
-import {authOptions} from "../auth/[...nextAuth]";
+import {authOptions} from "../auth/[...nextauth]";
 import {getServerSession} from "next-auth";
 import DOMPurify from "dompurify";
 
