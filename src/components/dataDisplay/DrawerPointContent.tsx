@@ -23,7 +23,6 @@ export default function DrawerPointContent({id}:{id:number}) {
 
     if(isLoading) return (<div className='h-full w-full flex justify-center align-middle'><Spinner /></div>)
 
-
     return (<div>
         
                      {/*//cover image*/}

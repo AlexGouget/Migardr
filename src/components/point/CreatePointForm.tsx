@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useContext, useState} from "react";
 import {
     Button,
     Checkbox,
@@ -20,8 +20,10 @@ import debounce from "lodash/debounce";
 import dayjs from "dayjs";
 import useSWR from "swr";
 import {fetcher} from "@/components/utils/utils";
-import {PlusOutlined} from "@ant-design/icons";
+import {MinusCircleOutlined, PlusOutlined} from "@ant-design/icons";
 import {RcFile} from "antd/es/upload";
+
+import {ToastContext} from "@/provider/toastProvider/ToastProvider";
 
 const getBase64 = (file: RcFile): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -32,28 +34,29 @@ const getBase64 = (file: RcFile): Promise<string> =>
     });
 
 
-export default function CreatePointForm({markerPosition , setMarkerPosition}:{markerPosition:[number, number]|null, setMarkerPosition:(position:[number, number])=>void}) {
+export default function CreatePointForm({markerPosition , setMarkerPosition, closeDrawer}:{markerPosition:[number, number]|null, setMarkerPosition:(position:[number, number])=>void, closeDrawer:()=>void}) {
 
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewImage, setPreviewImage] = useState('');
     const [previewTitle, setPreviewTitle] = useState('');
     const [fileList, setFileList] = useState<UploadFile[]>([])
-
     const [form] = Form.useForm();
     const [yearMode, setYearMode] = React.useState<'precise'|'estimate'>('precise');
+
+    const toast = useContext(ToastContext)
 
 
 
     const handleSubmit = async () => {
         const values = await form.validateFields();
-        console.log('Received values of form: ', values);
         const formData = new FormData();
 
         Object.keys(values).forEach(key => {
             const value = values[key];
             if (value !== undefined) {
                 if (typeof value === 'object' && !Array.isArray(value) && !(value instanceof Blob)) {
-                    formData.append(key, JSON.stringify(value));
+                    console.log('value',value)
+                    formData.append(key, value);
                 } else {
                     formData.append(key, value);
                 }
@@ -70,9 +73,29 @@ export default function CreatePointForm({markerPosition , setMarkerPosition}:{ma
             method: 'POST',
             body: formData,
         })
-            .then(response => response.ok ? response.json() : Promise.reject(response))
-            .then(data => console.log(data))
-            .catch(error => console.error('Error:', error));
+            .then(response => {
+                console.log('response',response)
+                if(response.ok){
+                    toast?.success("Discovery added")
+                    form.resetFields();
+                    setFileList([]);
+                    //close drawer
+                    closeDrawer()
+                }
+                return response.json()
+            })
+            .then(data => {
+               if(data.error){
+                   console.log(data)
+                   toast?.error(data.error)
+               }
+
+            })
+            .catch(error => {
+                console.error('Error:', error)
+                // @ts-ignore
+
+            });
     };
 
 
@@ -102,6 +125,10 @@ export default function CreatePointForm({markerPosition , setMarkerPosition}:{ma
 
     //swr fetcher
     const {data:category ,error, isLoading, } = useSWR('/api/typepoint', fetcher)
+
+    console.log(category)
+
+
     useEffect(() => {
         if(markerPosition){
             form.setFieldsValue({
@@ -111,13 +138,37 @@ export default function CreatePointForm({markerPosition , setMarkerPosition}:{ma
         }
     }, [markerPosition]);
 
+    const [newCategory, setNewCategory] = useState<boolean>(false)
+
+
+    const formItemLayoutWithOutLabel = {
+        wrapperCol: {
+            xs: { span: 24, offset: 0 },
+            sm: { span: 20, offset: 4 },
+        },
+    };
+
+    const formItemLayout = {
+        labelCol: {
+            xs: { span: 24 },
+            sm: { span: 4 },
+        },
+        wrapperCol: {
+            xs: { span: 24 },
+            sm: { span: 20 },
+        },
+    };
+
     return(<Form
         form={form}
-
-        onChange={()=>{
-            console.log(form.getFieldsValue())
+        scrollToFirstError
+        onValuesChange={(changedValues, allValues) => {
+            console.log(allValues);
         }}
-        layout="vertical">
+        layout="vertical"
+
+        >
+        <Divider orientation="left">Cordinate</Divider>
         <div className="flex justify-center gap-4">
             {/*LATTITUDE LONGITUDE*/}
             <Form.Item
@@ -147,63 +198,123 @@ export default function CreatePointForm({markerPosition , setMarkerPosition}:{ma
                     precision={12} className="w-full rounded-full"/>
             </Form.Item>
         </div>
-        <Form.Item label={"Category"}>
+        <Divider orientation="left"> Category </Divider>
+        <Form.Item
+            name={'category'}
+            rules={[{
+                required: true,
+                message: 'Please input category!'
+            }]
+            }
+        >
                 <Select
                     showSearch
                     //set the select field rounded
                     className="rounded-full"
-
-
                     placeholder="Select a category"
                     optionFilterProp="children"
+                    onChange={(e)=>{
+                        if(e === 25){
+                            setNewCategory(true)
+                        }else{
+                            setNewCategory(false)
+                        }
+                    }}
                     options={category?.map((cat:any)=>({
                         value:cat.id,
                         label:cat.libelle
                     }))}
                 />
         </Form.Item>
+
+        <Form.Item
+            hidden={!newCategory}
+            name={"newCategory"}
+            label={"Please enter new category :"}
+            rules={[{
+                // @ts-ignore
+                required: newCategory,
+                message: 'Please input category!'
+            }]}
+
+        >
+            <Input placeholder="new category..." className='rounded-full' />
+        </Form.Item>
+        <Divider orientation="left"> Title </Divider>
                 {/*TITLE*/}
                <Form.Item
                    rules={[{
                      required: true,
                      message: 'Please input title!'
                }]}
-                   label="Title :"
+
                    name="title">
                   <Input className='rounded-full' />
                </Form.Item>
 
                 {/*DATE OF DISCOVERY*/}
-                <Form.Item label={"year of discovery"} name="yearDiscovery">
+                <Form.Item
+                    label={"Year of discovery :"}
+                    name="yearDiscovery"
+                    rules={[{
+                        required: true,
+                        message: 'Please input year of discovery!'
+                    }]}
+                >
                     <DatePicker
                         disabledDate={(current) => {
                             return current && current > dayjs()
                         }}
                         placeholder='select the date of discovery'/>
                 </Form.Item>
-                   <Divider>
+
+
+                   <Divider orientation="left">
                        <Tooltip
                            title={"date of item "}>Date of item
                        </Tooltip>
                    </Divider>
-                 <Space className="flex align-middle flex-col">
+                 <Space className="flex align-middle flex-row items-center">
                      {/*SWITCH SELECT YEAR MODE*/}
                      {yearMode === 'precise' ?
-                     <Form.Item name="year">
+                     <Form.Item
+                         name="year"
+                        rules={[{
+                                required: true,
+                                message: 'Please input year!'
+                            }]}
+
+                     >
                          <DatePicker
                              disabledDate={(current) => {
                                  return current && current > dayjs()
                              }}
-                             placeholder='select the date of item'/>
+                             placeholder='Select the date of item'/>
                      </Form.Item>
                      :
                      <div className='flex align-middle gap-4'>
                          <Form.Item
                                     name="ApproximateYearBefore"
+                                    rules={[{
+                                        required: true,
+                                        message: 'Please input year!'
+                                    },
+                                        ({ getFieldValue }) => ({
+                                            validator(_, value) {
+                                                if (!value || getFieldValue('ApproximateYearAfter') > value) {
+                                                    return Promise.resolve();
+                                                }
+                                                return Promise.reject(new Error('The year must be less than the year after!'));
+                                            },
+                                        }),
+                                    ]}
                          >
                              <DatePicker
+                                 disabledDate={(current) => {
+                                     return current && current > dayjs()
+                                 }}
                                  picker="year"
-                                 placeholder='between...'/>
+                                 placeholder='Between...'/>
 
                          </Form.Item>
                          <Form.Item
@@ -218,22 +329,23 @@ export default function CreatePointForm({markerPosition , setMarkerPosition}:{ma
                      </div>
                      }
 
+
+                     <Form.Item>
                          <Checkbox  onChange={()=>{
                              if(yearMode === 'precise'){
                                  setYearMode('estimate')
                              }else{
                                  setYearMode('precise')
                              }}}
-                            checked={yearMode === 'estimate'}
+                                    checked={yearMode === 'estimate'}
                          >
                              Unknow date of item
                          </Checkbox>
-
-
+                     </Form.Item>
 
                </Space>
                 {/*DESCRIPTION*/}
-                <Divider>
+                <Divider orientation="left">
                     <Tooltip
                         title={"date of item "}>Description
                     </Tooltip>
@@ -252,11 +364,71 @@ export default function CreatePointForm({markerPosition , setMarkerPosition}:{ma
                     name="content">
                     <Input.TextArea rows={10} placeholder="More detail..."  className='rounded-xl' />
                 </Form.Item>
-                <Form.Item
-                    label="Source :"
-                    name="url">
-                    <Input placeholder="Source..."  className='rounded-xl' />
-                </Form.Item>
+
+                <Divider orientation="left">
+                    <Tooltip
+                        title={"Source of discovery "}>Source(s)
+                    </Tooltip>
+                </Divider>
+
+                {/*SOURCE*/}
+        <Form.List
+            name="sources"
+        >
+            {(fields, { add, remove }, { errors }) => (
+                <>
+                    {fields.map((field, index) => (
+                        <Form.Item
+                            {...formItemLayout}
+                            required={false}
+                            key={field.key}
+                        >
+                            <Form.Item
+                                {...field}
+                                validateTrigger={['onChange', 'onBlur']}
+                                noStyle
+                                rules={[
+                                    {
+
+                                        type: 'url',
+                                        message: "Please input source's name or delete this field.",
+                                    },
+                                    //url can only be https
+                                    {
+                                        validator(_, value) {
+                                            if (value && !value.startsWith('https')) {
+                                                return Promise.reject(new Error('The url must be https!'));
+                                            }
+                                            return Promise.resolve();
+                                        },
+                                    },
+                                ]}
+                            >
+                                <Input  placeholder="source" style={{ width: '90%' }} />
+                            </Form.Item>
+                            {fields.length > 1 ? (
+                                <MinusCircleOutlined
+                                    className="dynamic-delete-button ml-2"
+                                    onClick={() => remove(field.name)}
+                                />
+                            ) : null}
+                        </Form.Item>
+                    ))}
+                    <Form.Item>
+                        <Button
+                            type="dashed"
+                            onClick={() => add()}
+                            style={{ width: '80%' }}
+                            icon={<PlusOutlined />}
+                        >
+                            Add source
+                        </Button>
+                        <Form.ErrorList errors={errors} />
+                    </Form.Item>
+                </>
+            )}
+        </Form.List>
+
 
                 <Divider>
                     <Tooltip
@@ -264,8 +436,19 @@ export default function CreatePointForm({markerPosition , setMarkerPosition}:{ma
                     </Tooltip>
                 </Divider>
                 <Form.Item>
+                    <p>Max image size : 5mb</p>
                     <Upload
+                        //accept only jpeg and png
+                        accept='.jpg,.png'
+                        beforeUpload={(file) => {
 
+                            console.log("size",file.size)
+                          //check file size
+                            if(file.size > 5000000){
+                                toast?.error("File size is too big")
+                                return false
+                            }
+                        }}
                         listType="picture-card"
                         fileList={fileList}
                         maxCount={5}

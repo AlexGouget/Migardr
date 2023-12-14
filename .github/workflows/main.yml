@@ -1,0 +1,46 @@
+name: Deploy Next.js App
+
+on:
+  push:
+    branches:
+      - master  # Set to your default branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+
+      - name: Copy Files to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          source: "."
+          target: "/home/acreativdesign-keycaps/htdocs/midgard.association-hrafn-hugsadi.fr"
+
+      - name: Restart Application
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            cd /home/acreativdesign-keycaps/htdocs/midgard.association-hrafn-hugsadi.fr/        
+            npm install 
+            npx prisma generate dev
+            npm run build
+            pm2 start npm --name "midgard" -- start

@@ -29,6 +29,8 @@ export default function NavBar({setFeature, createPoint}:{setFeature:(feature:an
 
 
 
+
+
     const debouncedSearchLocation = useCallback(
         debounce((query) => searchLocation(query), 1000),
         [] // Les dépendances vides signifient que cette fonction n'est créée qu'une seule fois

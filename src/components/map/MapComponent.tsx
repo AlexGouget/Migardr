@@ -73,7 +73,7 @@ export default function MapComponent({
     return (
         <div className='w-full h-full z-0 absolute'>
             <MapContainer
-                maxZoom={5}
+
                 center={getCenterFromLocalStorage() || [51.505, -0.09]} zoomControl={false}  zoom={5} style={{ height: '100vh', width: '100%' }}>
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

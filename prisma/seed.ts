@@ -60,10 +60,10 @@ async function main() {
                                 latitude: faker.location.latitude(),
                                 longitude: faker.location.longitude(),
                                 title: faker.lorem.sentence(),
-                                yearDiscovery: faker.date.past().getFullYear(),
+                                yearDiscovery: faker.date.past(),
                                 description: faker.lorem.sentence(),
                                 content: faker.lorem.paragraphs(10),
-                                year: faker.date.past().getFullYear(),
+                                year: faker.date.past(),
                                 bc:  Math.random() >= 0.5,
                                 urlimage: {
                                         //random 1 à 3 images

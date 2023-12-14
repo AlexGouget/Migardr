@@ -22,13 +22,13 @@ model point {
   coverImage            urlimage?  @relation("PointToCoverImage", fields: [coverImageId], references: [id])
   content               String?    @db.Text
   title                 String
-  yearDiscovery         Int
+  yearDiscovery         DateTime
   description           String?
   url                   String?
   bc                    Boolean
-  year                  Int?
-  ApproximateYearBefore Int?
-  ApproximateYearAfter  Int?
+  year                  DateTime?
+  ApproximateYearBefore DateTime?
+  ApproximateYearAfter  DateTime?
   typePointId           Int
   slug                  String     @unique(map: "Point_slug_key") @db.VarChar(255)
   typepoint             typepoint  @relation(fields: [typePointId], references: [id], map: "Point_typePointId_fkey")
@@ -43,8 +43,8 @@ model typepoint {
   id          Int       @id @default(autoincrement())
   libelle     String
   description String?
-  icon        String
-  createdAt   DateTime  @default(now())
+  icon        String?   @default("Other.svg")
+  createdAt   DateTime? @default(now())
   updatedAt   DateTime?
   deletedAt   DateTime?
   point       point[]
@@ -53,7 +53,7 @@ model typepoint {
 model urlimage {
   id          Int       @id @default(autoincrement())
   pointId     Int
-  url         String
+  url         String    @db.Text
   filename    String
   mimetype    String
   description String?

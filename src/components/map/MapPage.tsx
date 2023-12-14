@@ -1,8 +1,10 @@
+'use client';
 import NavBar from "@/components/navigation/NavBar";
 import React, {useEffect, useState} from "react";
 import dynamic from "next/dynamic";
 import ItemDrawer from "@/components/dataDisplay/ItemDrawer";
 import CreatePointForm from "@/components/point/CreatePointForm";
+import ToastProvider from "@/provider/toastProvider/ToastProvider";
 
 
 //dynamic import
@@ -19,6 +21,9 @@ export default function MapPage() {
     const [newMarker, setNewMarker] = useState<any>(false)
     const [id, setId] = useState<number | null>(null)
     const [title, setTitle] = useState<string | null>(null)
+
+
+
 
     const openDrawer = (content:any, title:string) => {
         setTitle(title)
@@ -49,14 +54,18 @@ export default function MapPage() {
     console.log("mapPage",newMarkerPosition)
 
     return (
-        <>
+        <ToastProvider>
             <NavBar setFeature={setFeature} createPoint={createPoint} />
             <ItemDrawer
                 title={title}
                 open={showDrawer}
                 content={
                 newMarker
-                    ? <CreatePointForm markerPosition={newMarkerPosition} setMarkerPosition={setNewMarkerPosition}/>
+                    ?
+
+
+                         <CreatePointForm markerPosition={newMarkerPosition} setMarkerPosition={setNewMarkerPosition} closeDrawer={closeDrawer} />
+
                     : drawerContent
             } closeDrawer={closeDrawer} />
             <MapComponent
@@ -67,7 +76,7 @@ export default function MapPage() {
                 retrieveMarker={retrieveNewMarkerPosition}
 
             />
-        </>
+        </ToastProvider>
     )
 }
 
