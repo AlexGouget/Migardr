@@ -50,6 +50,7 @@ export class PointModel {
                     select: {
                         url: true,
                         description: true,
+                        mimetype: true,
                     },
                 },
                 coverImage: true,

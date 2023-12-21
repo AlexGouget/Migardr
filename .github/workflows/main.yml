@@ -47,9 +47,6 @@ jobs:
 # pm2 start npm --name "midgard" -- start
       - name: Restart Application
         uses: appleboy/ssh-action@master
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
         with:
           env: |
             DATABASE_URL=${{ secrets.DATABASE_URL }}
@@ -60,8 +57,10 @@ jobs:
           script: |
             cd /home/acreativdesign-keycaps/htdocs/midgard.association-hrafn-hugsadi.fr/        
             npm install         
-            npx prisma migrate dev --name init
-            npx prisma generate 
+            echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" > .env
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+            npx prisma migrate deploy
+            npx prisma generate            
             npm run build
             pm2 restart midgard
             
