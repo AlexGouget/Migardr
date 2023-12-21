@@ -74,7 +74,7 @@ export default function DrawerPointContent({id}:{id:number}) {
                     <div className='flex justify-end'>
                         <a href={`/discovery/${item.typepoint.libelle}/${item.slug}`}>Read more </a>
                     </div>
-                    
+
                     <Divider />
                     <div className='flex justify-center gap-2 align-middle'>
                         {
