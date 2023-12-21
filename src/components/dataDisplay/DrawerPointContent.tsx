@@ -43,7 +43,7 @@ export default function DrawerPointContent({id}:{id:number}) {
         {item.urlimage?.length > 0 &&
                 <div className='h-1/6  h-[200px] w-full overflow-hidden mb-2'>
                     <img
-                        onError={(e)=>{e.currentTarget.src = `/uploads/default.jpg`}}
+                        onError={(e)=>{e.currentTarget.src = `/assets/default.jpg`}}
                         className='object-cover w-full h-full'
                         src={item.urlimage[0].url} alt=""/>
                 </div>}
