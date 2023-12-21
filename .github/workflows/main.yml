@@ -28,7 +28,7 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
 
-      - name: Install Dependencies
+      - name: Install Dependenciespm
         run: npm install --force
 
 

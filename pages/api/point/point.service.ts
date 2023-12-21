@@ -32,8 +32,13 @@ export class PointService {
                     },
                     yearDiscovery: true,
                     slug: true,
-                    year: true,
-                    bc: true,
+                    dyear: true,
+                    dmonth: true,
+                    dday: true,
+                    dyearAfter: true,
+                    dmonthAfter: true,
+                    ddayAfter: true,
+
                     urlimage: {
                         select: {
                             url: true,
