@@ -19,8 +19,8 @@ const { Option } = Select;
 import dayjs from "dayjs";
 import useSWR from "swr";
 import {fetcher} from "@/components/utils/utils";
-import {InboxOutlined, MinusCircleOutlined, PlusOutlined} from "@ant-design/icons";
-import {RcFile} from "antd/es/upload";
+import {InboxOutlined, MinusCircleOutlined, PlusOutlined, UploadOutlined} from "@ant-design/icons";
+import {RcFile, UploadChangeParam} from "antd/es/upload";
 
 import {ToastContext} from "@/provider/toastProvider/ToastProvider";
 import Dragger from "antd/es/upload/Dragger";
@@ -186,17 +186,6 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
 
     const handleCancel = () => setPreviewOpen(false);
 
-    const handlePreview = async (file: UploadFile) => {
-
-        console.log(file)
-        if (!file.url && !file.preview) {
-            file.preview = await getBase64(file.originFileObj as RcFile);
-        }
-
-        setPreviewImage(file.url || (file.preview as string));
-        setPreviewOpen(true);
-        setPreviewTitle(file.name || file.url!.substring(file.url!.lastIndexOf('/') + 1));
-    };
 
 
     const uploadButton = (
@@ -480,6 +469,24 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
     }, [form]);
 
 
+
+    const handlePreview = async (file: UploadFile) => {
+        if (!file.url && !file.preview) {
+            file.preview = await getBase64(file.originFileObj as RcFile);
+        }
+
+        setPreviewImage(file.url || (file.preview as string));
+        setPreviewOpen(true);
+        setPreviewTitle(file.name || file.url!.substring(file.url!.lastIndexOf('/') + 1));
+    };
+
+    const handleChange: UploadProps['onChange'] = ({ fileList: newFileList }) =>
+        setFileList(newFileList);
+    const a = 0;
+
+    console.log("a",!a)
+
+
     return(<Form
         onChange={debounce(() => {
             //store form data in localstorage
@@ -704,6 +711,21 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
                 </Divider>
                 {/*UPLOAD*/}
                 <Form.Item name='files'>
+
+
+                    {/*<Upload*/}
+                    {/*    action={`/api/image-upload?uuid=${form.getFieldValue('uuid')}&title=${form.getFieldValue('title')}`}*/}
+                    {/*    listType="picture-card"*/}
+                    {/*    fileList={fileList}*/}
+                    {/*    onPreview={handlePreview}*/}
+                    {/*    onChange={handleChange}*/}
+                    {/*>*/}
+                    {/*    {fileList.length >= 8 ? null : uploadButton}*/}
+                    {/*</Upload>*/}
+                    {/*<Modal open={previewOpen} title={previewTitle} footer={null} onCancel={handleCancel}>*/}
+                    {/*    <img alt="example" style={{ width: '100%' }} src={previewImage} />*/}
+                    {/*</Modal>*/}
+
                     <p>Max image size : 5mb</p>
                     <Upload
                         name={'file'}
@@ -714,8 +736,9 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
                         beforeUpload={beforeUpload}
                         listType="picture-card"
                         fileList={fileList}
+                        onChange={handleChange}
                         maxCount={5}
-                        onPreview={handlePreview}
+                        // onPreview={handlePreview}
                         // onChange={handleChange}
                         onRemove={(file)=>{
                             fetch(`/api/delete-uploaded-image?id=${file.uid}`, {

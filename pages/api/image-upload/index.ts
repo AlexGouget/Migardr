@@ -8,11 +8,18 @@ import DOMPurify from "dompurify";
 import {sanitize} from "../new-discovery";
 import {nanoid} from "nanoid";
 import prisma from "../../../prisma/db";
+import {RcFile} from "antd/es/upload";
 // Cette configuration est nécessaire pour dire à Next.js de ne pas traiter le corps de la requête automatiquement.
 export const config = {
    api: {
       bodyParser: false,
    },
+};
+
+const getBase64 = (img: RcFile, callback: (url: string) => void) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => callback(reader.result as string));
+    reader.readAsDataURL(img);
 };
 
 async function saveFile(file:any) {
@@ -57,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const name = `${title}`;
           const filename = `${name}${nanoid(5)}${ext}`;
           try{
-              await prisma.urlimage.create({
+             const result = await prisma.urlimage.create({
                   data: {
                       filename: filename ,
                       url: folderPath.replace('./public', '') + '/' + filename,
@@ -82,10 +89,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 console.log("array error",err);
                 if(err.code === 'LIMIT_FILE_SIZE')  {
                     res.status(500).json({ error: 'File size is too large. Max limit is 5MB' });
-                    return;
                 }
-               return  res.status(500).json({ error: "Une erreur est survenue" });
+                res.status(500).json({ error: "Une erreur est survenue" });
+                return;
             }
-           return res.status(200).json({message: 'ok'})
+            //return the file
+            // @ts-ignore
+            res.status(200).json(req.file);
+            return
         });
+
+
 }
