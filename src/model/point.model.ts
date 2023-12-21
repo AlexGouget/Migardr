@@ -1,7 +1,9 @@
-import {point, PrismaClient} from "@prisma/client";
-import {baseUser} from "@/model/user.model";
 
-const prisma = new PrismaClient();
+import {baseUser} from "@/model/user.model";
+import prisma from "../../prisma/db";
+import {point} from "@prisma/client";
+
+
 
 export class PointModel {
     constructor(public pointData: point) {}
@@ -44,7 +46,12 @@ export class PointModel {
                 user: {
                     select: baseUser,
                 },
-                urlimage: true,
+                urlimage: {
+                    select: {
+                        url: true,
+                        description: true,
+                    },
+                },
                 coverImage: true,
             },
         });

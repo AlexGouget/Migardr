@@ -18,11 +18,6 @@ const HTML_ALLOWED_TAGS = {
     }
 }
 
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-}
 const generateUniqueFolderId = () => {
     return Date.now().toString(36) + Math.random().toString(36);
 }
@@ -34,7 +29,7 @@ const sanitizeText = (text: string) => {
         allowedAttributes: {},
     });
 }
-const sanitize = (filename: string) => {
+export const sanitize = (filename: string) => {
     return filename
         .normalize("NFD") // décompose les caractères accentués en leurs composants
         .replace(/[\u0300-\u036f]/g, "") // supprime les signes diacritiques
@@ -47,81 +42,20 @@ const sanitize = (filename: string) => {
 
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-
     // @ts-ignore
     const session = await getServerSession(req, res, authOptions)
     // @ts-ignore
     const {name, email, image, id} = session?.user;
-
-
     if (req.method === 'POST') {
-        const uuidFolder = generateUniqueFolderId();
+        if(!req.body) return res.status(400).json({message: 'missing data'});
+        const body = JSON.parse(req.body);
 
-        const folderPath = `./public/uploads/${uuidFolder}`;
-        const storage = multer.diskStorage({
-                destination: (req, file, cb) => {
-                    if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
-                    if(!req.body.folderPath) req.body.folderPath = folderPath;
-                    cb(null, folderPath);
-                },
-                filename: (req, file, cb) => {
-                    const ext = path.extname(file.originalname);
-                    const title = sanitize(req.body.title);
-                    const originalName = sanitize(file.originalname);
-                    const name = `${title}`;
+        console.log("body", body);
 
-                    //10 caractères max UUID
-                    const uuid = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        const result = await savePointToDB(body, id);
 
-                    const filename = `${name+uuid}${ext}`;
-
-                    if(!req.body.urlimage) req.body.urlimage = [];
-
-                    const description = sanitizeText(req.body.description);
-                    req.body.urlimage.push({
-                        url: `/uploads/${uuidFolder}/${filename}`,
-                        filename: name,
-                        mimetype: file.mimetype,
-                        description: description,
-                    });
-
-                    cb(null, filename);
-                }
-            });
-
-
-
-        multer({
-            storage,
-            limits: {
-                // 5 MB
-                fileSize: 5 * 1024 * 1024,
-                files: 5
-            },
-            // @ts-ignore
-        }).array('files')(req, res, async (err) => {
-            if (err) {
-                console.log("array error",err);
-                if(err.code === 'LIMIT_FILE_SIZE')  {
-                    res.status(500).json({ error: 'File size is too large. Max limit is 5MB' });
-                    return;
-                }
-                res.status(500).json({ error: "Une erreur est survenue" });
-                return;
-            }
-            savePointToDB(req.body, id).then(() => {
-                console.log('saved');
-                res.status(200).json(req.body);
-            }).catch((e) => {
-                console.log("erreur",e);
-                //delete folder in req.body.folderPath
-
-                // fs.rmdirSync(req.body.folderPath, { recursive: true });
-                res.status(500).json({ error: 'Une erreur est survenue' });
-            });
-            }
-        );
-
+        if(!result) return res.status(400).json({message: 'missing data'});
+        return res.status(200).json(result);
 
     } else {
         res.setHeader('Allow', ['POST']);
@@ -130,50 +64,96 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 }
 
 
+function getTypePoint(body:any) {
+    let typepointData;
+    if (body.newCategory) {
+        // L'utilisateur a fourni une nouvelle catégorie
+        return {
+            create: {
+                libelle: sanitizeHtml(body.newCategory, HTML_ALLOWED_TAGS),
+            }
+        };
+    } else {
+        // Connecter à une catégorie existante
+        return {
+            connect: {
+                id: Number(body.category)
+            }
+        };
+    }
+}
+
+async function getImagesToConnect(uuid: string) {
+    const img = await prisma.urlimage.findMany({
+        where: {
+            uuid: uuid
+        }
+    });
+    if (!img) return [];
+    let images = [];
+    for (const image of img) {
+        images.push({
+            id: image.id
+        });
+    }
+    return images;
+}
+
 const savePointToDB = async (data: any, userId:any) => {
     //retrieve user id
     const session = await getSession();
-   const body = await checkData(data);
+    const body = await checkData(data);
 
-   console.log("body", new Date(body.yearDiscovery));
+    let typepointData = getTypePoint(body);
+    let images = getImagesToConnect(body.uuid);
 
-    const result = await prisma.point.create({
-        data: {
-            user: {
-                connect: {
-                    id: userId
-                }
-            },
-            slug: body.slug,
-            title: sanitizeHtml(body.title, HTML_ALLOWED_TAGS),
-            description: sanitizeHtml(body.description, HTML_ALLOWED_TAGS),
-            content: sanitizeHtml(body.content, HTML_ALLOWED_TAGS),
-            yearDiscovery: new Date(body.yearDiscovery),
-            year: new Date(body.year),
-            url: sanitizeHtml(body.url, HTML_ALLOWED_TAGS),
-            ApproximateYearBefore: body.ApproximateYearBefore ? new Date(body.ApproximateYearBefore) : null,
-            ApproximateYearAfter: body.ApproximateYearAfter ? new Date(body.ApproximateYearAfter) : null,
-            latitude: Number(body.lat),
-            longitude: Number(body.lng),
-            bc: false,
-            urlimage: {
-                create: body.urlimage
-            },
-            typepoint: {
-                connectOrCreate: {
-                    where: {
-                        id: Number(body.category)
-                    },
-                    create: {
-                        libelle: body.newCategory ? sanitizeHtml(body.newCategory, HTML_ALLOWED_TAGS) : '',
+    // GESTION DES DATES
+    const { year, month, day } = body;
+    const { yearAfter, monthAfter, dayAfter } = body;
+
+    const yearDiscoveryDate = new Date(body.yearDiscovery);
+    yearDiscoveryDate.setUTCHours(0, 0, 0, 0);
+
+    try{
+        //transform yearDiscovery to UTC date with hours 00:00:00
 
 
+        const result = await prisma.point.create({
+            data: {
+                user: {
+                    connect: {
+                        id: userId
                     }
-                }
-            },
+                },
+                slug: body.slug,
+                title: sanitizeHtml(body.title, HTML_ALLOWED_TAGS),
+                description: sanitizeHtml(body.description, HTML_ALLOWED_TAGS),
+                content: sanitizeHtml(body.content, HTML_ALLOWED_TAGS),
+                //date de découverte with hours 0 to avoid bug
+                yearDiscovery: yearDiscoveryDate,
+                url: sanitizeHtml(body.url, HTML_ALLOWED_TAGS),
+                dyear: Number(year),
+                dmonth: Number(month),
+                dday: Number(day),
+                dyearAfter: Number(yearAfter),
+                dmonthAfter: Number(monthAfter),
+                ddayAfter: Number(dayAfter),
+                latitude: Number(body.lat),
+                longitude: Number(body.lng),
+                bc: false,
+                urlimage: {
+                    connect: await images
+                },
+                typepoint: typepointData,
 
-    }});
-    return result;
+            }});
+        return result;
+    }catch (e) {
+        console.log("e", e);
+        throw new Error('Missing required fields');
+    }
+
+
 }
 
 function generateSlug(title: string) {
@@ -198,8 +178,11 @@ function escapeInput(input:string) {
 
 async function checkData(body: any) {
 
-    const {lat, lng, title, yearDiscovery} = body;
-    if (!lat || !lng || !title || !yearDiscovery) throw new Error('Missing required fields');
+    const {lat, lng, title, yearDiscovery, uuid} = body;
+
+    console.log("body", body);
+
+    if (!lat || !lng || !title || !yearDiscovery || !uuid )  throw new Error('Missing required fields');
 
     const {category, newCategory} = body;
     if (category === '1') {
@@ -207,12 +190,11 @@ async function checkData(body: any) {
             throw new Error('Missing required fields');
     }
 
-    const {year, ApproximateYearBefore, ApproximateYearAfter} = body;
+    const {year, yearAfter} = body;
     if (!year) {
-        if (!ApproximateYearBefore || !ApproximateYearAfter)
+        if (!yearAfter)
             throw new Error('Missing required fields');
     }
-
 
     //check if slug already exist
     const slug = generateSlug(title);
@@ -221,9 +203,6 @@ async function checkData(body: any) {
             slug: slug
         }
     });
-
-    console.log("point", point);
-
     if (point){
         //we add small uuid to slug
         body.slug = `${slug}-${Date.now().toString(36)}`;
@@ -231,7 +210,5 @@ async function checkData(body: any) {
     }else{
         body.slug = slug;
     }
-
-
     return body;
 }

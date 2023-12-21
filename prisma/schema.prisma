@@ -10,30 +10,33 @@ datasource db {
 // TODO relatedPoint
 
 model point {
-  id                    Int        @id @default(autoincrement())
-  active                Boolean    @default(true)
-  userId                String
-  latitude              Float
-  longitude             Float
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime?
-  deletedAt             DateTime?
-  coverImageId          Int?       @unique
-  coverImage            urlimage?  @relation("PointToCoverImage", fields: [coverImageId], references: [id])
-  content               String?    @db.Text
-  title                 String
-  yearDiscovery         DateTime
-  description           String?
-  url                   String?
-  bc                    Boolean
-  year                  DateTime?
-  ApproximateYearBefore DateTime?
-  ApproximateYearAfter  DateTime?
-  typePointId           Int
-  slug                  String     @unique(map: "Point_slug_key") @db.VarChar(255)
-  typepoint             typepoint  @relation(fields: [typePointId], references: [id], map: "Point_typePointId_fkey")
-  user                  user       @relation(fields: [userId], references: [id], map: "Point_userId_fkey")
-  urlimage              urlimage[] @relation("PointToUrlImage")
+  id            Int        @id @default(autoincrement())
+  active        Boolean    @default(true)
+  userId        String
+  latitude      Float
+  longitude     Float
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime?
+  deletedAt     DateTime?
+  coverImageId  Int?       @unique
+  coverImage    urlimage?  @relation("PointToCoverImage", fields: [coverImageId], references: [id])
+  content       String?    @db.Text
+  title         String
+  yearDiscovery DateTime
+  description   String?
+  url           String?
+  bc            Boolean
+  dyear         Int?
+  dmonth        Int?
+  dday          Int?
+  dyearAfter    Int?
+  dmonthAfter   Int?
+  ddayAfter     Int?
+  typePointId   Int
+  slug          String     @unique(map: "Point_slug_key") @db.VarChar(255)
+  typepoint     typepoint  @relation(fields: [typePointId], references: [id], map: "Point_typePointId_fkey")
+  user          user       @relation(fields: [userId], references: [id], map: "Point_userId_fkey")
+  urlimage      urlimage[] @relation("PointToUrlImage")
 
   @@index([typePointId], map: "Point_typePointId_fkey")
   @@index([userId], map: "Point_userId_fkey")
@@ -51,17 +54,20 @@ model typepoint {
 }
 
 model urlimage {
-  id          Int       @id @default(autoincrement())
-  pointId     Int
-  url         String    @db.Text
-  filename    String
-  mimetype    String
-  description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime?
-  deletedAt   DateTime?
-  point       point?    @relation("PointToUrlImage", fields: [pointId], references: [id])
-  coverPoint  point?    @relation("PointToCoverImage")
+  id           Int       @id @default(autoincrement())
+  uuid         String?   @default(cuid())
+  pointId      Int?
+  url          String    @db.Text
+  filename     String
+  mimetype     String
+  description  String?
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+  deletedAt    DateTime?
+  point        point?    @relation("PointToUrlImage", fields: [pointId], references: [id])
+  coverPoint   point?    @relation("PointToCoverImage")
+  uploadedById String?
+  uploadedBy   user?     @relation(fields: [uploadedById], references: [id], map: "UrlImage_uploadedById_fkey")
 
   @@index([pointId], map: "UrlImage_pointId_fkey")
 }
@@ -96,22 +102,23 @@ model session {
 }
 
 model user {
-  id            String    @id @default(cuid())
-  email         String    @unique(map: "User_email_key")
-  name          String    @unique(map: "User_name_key")
+  id            String     @id @default(cuid())
+  email         String     @unique(map: "User_email_key")
+  name          String     @unique(map: "User_name_key")
   password      String?
   description   String?
-  createdAt     DateTime  @default(now())
+  createdAt     DateTime   @default(now())
   updatedAt     DateTime?
   deletedAt     DateTime?
-  admin         Boolean   @default(false)
-  active        Boolean   @default(true)
+  admin         Boolean    @default(false)
+  active        Boolean    @default(true)
   emailVerified DateTime?
   image         String?
-  roles         String    @default("user")
+  roles         String     @default("user")
   account       account[]
   point         point[]
   session       session[]
+  uploadedImg   urlimage[]
 }
 
 model verificationtoken {

@@ -1,11 +1,11 @@
-import {PrismaClient} from "@prisma/client";
+import prisma from "../../../prisma/db";
 import {NextApiRequest, NextApiResponse} from "next";
-import {point} from "@prisma/client";
+import {point, PrismaClient} from "@prisma/client";
 export class PointService {
 
     private prisma: PrismaClient;
     constructor(private req: NextApiRequest,private res: NextApiResponse) {
-        this.prisma = new PrismaClient()
+        this.prisma = prisma;
     }
 
     async getPointBySlug(slug: string) {

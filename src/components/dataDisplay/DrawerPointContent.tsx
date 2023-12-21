@@ -11,6 +11,7 @@ import Bookmark from "@/components/utils/Bookmark";
 import useSWR from "swr";
 import {fetcher} from "@/components/utils/utils";
 import Spinner from "@/components/dataDisplay/spinner/Spinner";
+import {renderItemAge} from "@/components/dataDisplay/contentUtils";
 
 
 const {Title} = Typography
@@ -24,60 +25,56 @@ export default function DrawerPointContent({id}:{id:number}) {
 
     if(isLoading) return (<div className='h-full w-full flex justify-center align-middle'><Spinner /></div>)
 
+
+    const itemAge = renderItemAge(item)
+
+    console.log(item)
+
     return (<div>
-        
+                  {/*{ item.typepoint.libelle !== undefined &&  <div className='h-1/6  min-h-[200px] w-full'*/}
+                  {/*                      style={{*/}
+                  {/*                          backgroundImage: `url(${item.coverImage?.url || `/assets/image/defaultCover/${item.typepoint.libelle}.jpg`})`,*/}
+                  {/*                          backgroundSize: 'cover',*/}
+                  {/*                          backgroundPosition: 'center',*/}
+                  {/*                      }} >*/}
+                  {/*                  </div>}*/}
                      {/*//cover image*/}
-                    <div className='h-1/6  min-h-[200px] w-full'
-                    style={{
-                        backgroundImage: `url(${item.coverImage?.url || `/assets/image/defaultCover/${item.typepoint.libelle}.jpg`})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                    }} >
-                    </div>
-                        {/*<div className='w-full flex justify-center'>*/}
-                        {/*    <Image*/}
-                        {/*        src={data.coverImage?.url || `/assets/image/defaultCover/${data.typepoint.libelle}.jpg`}*/}
-                        {/*        width={300}*/}
-                        {/*        alt={data.coverImage?.description}*/}
-                        {/*        className={'rounded-lg'}*/}
-                        {/*        placeholder={*/}
-                        {/*            <Image*/}
-                        {/*                preview={false}*/}
-                        {/*                src={data.coverImage?.url}*/}
-                        {/*                alt={data.coverImage?.description}*/}
-                        {/*                width={200}*/}
-                        {/*            />*/}
-                        {/*        }*/}
-                        {/*    />*/}
-                        {/*</div>*/}
-                 <div
-                    onMouseEnter={()=>{setShowMenu(true)}}
-                    onMouseLeave={()=>{setShowMenu(false)}}
-                    className='h-1/6 w-full flex justify-start gap-5'>
-                    <h1 className="">{item.title}</h1>
-                   <Bookmark callback={()=>{}} args={{size: 20}} />
-                   {showMenu && <button><BsThreeDotsVertical size={20} /></button>}
-                </div>
+
+        {item.urlimage?.length > 0 &&
+                <div className='h-1/6  h-[200px] w-full overflow-hidden mb-2'>
+                    <img
+                        onError={(e)=>{e.currentTarget.src = `/uploads/default.jpg`}}
+                        className='object-cover w-full h-full'
+                        src={item.urlimage[0].url} alt=""/>
+                </div>}
+
+
                 <div>
-                    <Typography.Paragraph>
-                                {item.description}
-                    </Typography.Paragraph>
+                    <div
+                        onMouseEnter={()=>{setShowMenu(true)}}
+                        onMouseLeave={()=>{setShowMenu(false)}}
+                        className='w-full flex justify-end gap-5'>
+                        <Bookmark callback={()=>{}} args={{size: 20}} />
+                       <button><BsThreeDotsVertical size={20} /></button>
+                    </div>
+
 
                     <Descriptions title="Details :">
-                        <Descriptions.Item label="Item year">{item.year  || 'unknow'} {item.year && item.bc ? '(BC)': '(AC)'}</Descriptions.Item>
+                        <Descriptions.Item label="Item age">{itemAge} </Descriptions.Item>
                         <Descriptions.Item label="Year discovery">{item.yearDiscovery}</Descriptions.Item>
                     </Descriptions>
 
-
                     <Title level={5}>Description :</Title>
-                    <Typography.Paragraph
-                    ellipsis={{rows: 4 }}
-                    >
-                                {item.content}
+                    <Typography.Paragraph>
+                        {item.description}
+                    </Typography.Paragraph>
+                    <Typography.Paragraph ellipsis={{rows: 4 }}>
+                        {item.content}
                     </Typography.Paragraph>
                     <div className='flex justify-end'>
                         <a href={`/discovery/${item.typepoint.libelle}/${item.slug}`}>Read more </a>
                     </div>
+                    
                     <Divider />
                     <div className='flex justify-center gap-2 align-middle'>
                         {
@@ -85,6 +82,8 @@ export default function DrawerPointContent({id}:{id:number}) {
                                 if(index < 2){
                                     return (
                                         <Image
+                                           //on error hide image
+                                            onError={(e)=>{e.currentTarget.style.display = 'none'}}
                                             key={index}
                                             src={url.url}
                                             alt={url.description}
@@ -92,6 +91,7 @@ export default function DrawerPointContent({id}:{id:number}) {
                                             className='rounded-xl'
                                             placeholder={
                                                 <Image
+
                                                     preview={false}
                                                     src={url.url}
                                                     alt={url.description}

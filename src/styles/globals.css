@@ -46,3 +46,17 @@ h1 {
 /*    )*/
 /*    rgb(var(--background-start-rgb));*/
 /*}*/
+
+
+.leaflet-popup-close-button{
+    @apply hidden !important;
+}
+
+.leaflet-popup-content-wrapper{
+    @apply rounded-full !important;
+    @apply shadow-lg !important;
+}
+
+.leaflet-popup-content{
+    @apply font-semibold !important;
+}

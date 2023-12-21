@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import prisma from "../../../prisma/db";
 import { useRouter } from 'next/router'
 import dynamic from "next/dynamic";
 import Navbar from '@/components/navigation/NavBar';
@@ -12,7 +12,6 @@ export async function getServerSideProps({ params, res, req }:{params:any, res:a
         'Cache-Control',
         'public, s-maxage=10, stale-while-revalidate=59'
     )
-    const prisma = new PrismaClient();
     //if params category and slug are not defined, send 404
     if (!params.slug && !params.category) return {notFound: true}
     const post = await prisma.point.findUnique({

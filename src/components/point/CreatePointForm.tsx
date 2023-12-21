@@ -1,4 +1,4 @@
-import React, {useContext, useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import {
     Button,
     Checkbox,
@@ -14,16 +14,20 @@ import {
     Upload,
     UploadFile, UploadProps
 } from "antd";
-import {useEffect} from "react";
 import debounce from "lodash/debounce";
-
+const { Option } = Select;
 import dayjs from "dayjs";
 import useSWR from "swr";
 import {fetcher} from "@/components/utils/utils";
-import {MinusCircleOutlined, PlusOutlined} from "@ant-design/icons";
+import {InboxOutlined, MinusCircleOutlined, PlusOutlined} from "@ant-design/icons";
 import {RcFile} from "antd/es/upload";
 
 import {ToastContext} from "@/provider/toastProvider/ToastProvider";
+import Dragger from "antd/es/upload/Dragger";
+import {nanoid} from "nanoid";
+
+import 'dayjs/locale/fr'; // Exemple pour la langue française
+dayjs.locale('fr');
 
 const getBase64 = (file: RcFile): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -42,36 +46,108 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
     const [fileList, setFileList] = useState<UploadFile[]>([])
     const [form] = Form.useForm();
     const [yearMode, setYearMode] = React.useState<'precise'|'estimate'>('precise');
-
+    const [uuid, setUuid] = useState<string|null>(null)
+    const [uploadableFiles, setUploadableFiles] = useState<boolean>(false)
+    const [canSubmit, setCanSubmit] = useState<boolean>(false)
     const toast = useContext(ToastContext)
+    const [send, setSend] = useState<boolean>(false)
+
+    type mood = 'photography' | 'webDev' | '3Dprint' | 'Maker'
+
+
+    console.log('form', form.getFieldsValue())
+    console.log('uploadableFiles', uploadableFiles)
+    console.log('form title', form.getFieldValue('title') !== undefined)
+
+
+    useEffect(() => {
+        const localForm = localStorage.getItem('form')
+        if(localForm){
+            //check if form is not empty
+            const formValues = JSON.parse(localForm)
+            if(formValues.lat && formValues.lng){
+                setMarkerPosition([formValues.lat, formValues.lng])
+            }
+            if(formValues.yearAfter){
+                setYearMode('estimate')
+            }
+
+            //convert date to dayjs
+            if(formValues.yearDiscovery){
+                formValues.yearDiscovery = dayjs(formValues.yearDiscovery)
+            }
+            if(formValues.ApproximateYearBefore){
+                formValues.ApproximateYearBefore = dayjs(formValues.ApproximateYearBefore)
+            }
+            if(formValues.ApproximateYearAfter){
+                formValues.ApproximateYearAfter = dayjs(formValues.ApproximateYearAfter)
+            }
+            form.setFieldsValue(formValues);
+            setUuid(formValues.uuid)
+
+        }else{
+            const uuid = nanoid(10)
+            localStorage.setItem('form', JSON.stringify({
+                ...form.getFieldsValue(),
+                lat: markerPosition ? markerPosition[0] : null,
+                lng: markerPosition ? markerPosition[1] : null,
+                uuid: uuid
+            }));
+            form.setFieldsValue({
+                ...form.getFieldsValue(),
+                lat: markerPosition ? markerPosition[0] : null,
+                lng: markerPosition ? markerPosition[1] : null,
+                uuid: uuid
+            });
+            setUuid(uuid)
+        }
+    }, []);
+
+
+
+    /**
+     * Retrieve Uploaded files from localstorage uuid
+     */
+    const {data:files ,error:errorFiles, isLoading:loadingFile, } = useSWR(`/api/image-uploaded?uuid=${uuid}`, fetcher)
+
+    console.log(`/api/image-uploaded?uuid=${uuid}`, files)
+
+    useEffect(() => {
+        if(files && files.length > 0){
+            const fileList:UploadFile[] = []
+            files.map((file:any)=>{
+                fileList.push({
+                    uid: file.id,
+                    name: file.name,
+                    url: file.url,
+                })
+            })
+            setFileList(fileList)
+        }
+    }, [files]);
+
+    useEffect(() => {
+        if(markerPosition){
+           localStorage.setItem('form', JSON.stringify({
+                ...form.getFieldsValue(),
+                lat: markerPosition ? markerPosition[0] : null,
+                lng: markerPosition ? markerPosition[1] : null,
+              }));
+           }
+    }, [markerPosition]);
 
 
 
     const handleSubmit = async () => {
+
+        setSend(true)
         const values = await form.validateFields();
-        const formData = new FormData();
 
-        Object.keys(values).forEach(key => {
-            const value = values[key];
-            if (value !== undefined) {
-                if (typeof value === 'object' && !Array.isArray(value) && !(value instanceof Blob)) {
-                    console.log('value',value)
-                    formData.append(key, value);
-                } else {
-                    formData.append(key, value);
-                }
-            }
-        });
-
-        fileList.forEach(file => {
-            if (file.originFileObj) {
-                formData.append('files', file.originFileObj, file.originFileObj.name);
-            }
-        });
+        console.log('Received values of form: ', values);
 
         fetch('/api/new-discovery', {
             method: 'POST',
-            body: formData,
+            body: JSON.stringify(values),
         })
             .then(response => {
                 console.log('response',response)
@@ -81,6 +157,8 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
                     setFileList([]);
                     //close drawer
                     closeDrawer()
+                    setSend(false)
+                    localStorage.removeItem('form')
                 }
                 return response.json()
             })
@@ -88,11 +166,14 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
                if(data.error){
                    console.log(data)
                    toast?.error(data.error)
+                     setSend(false)
                }
 
             })
             .catch(error => {
                 console.error('Error:', error)
+                toast?.error("Error")
+                setSend(false)
                 // @ts-ignore
 
             });
@@ -100,9 +181,14 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
 
 
 
+
+
+
     const handleCancel = () => setPreviewOpen(false);
 
     const handlePreview = async (file: UploadFile) => {
+
+        console.log(file)
         if (!file.url && !file.preview) {
             file.preview = await getBase64(file.originFileObj as RcFile);
         }
@@ -120,8 +206,25 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
         </div>
     );
 
-    const handleChange: UploadProps['onChange'] = ({ fileList: newFileList }) =>
-        setFileList(newFileList);
+    const beforeUpload = (file:any) => {
+        if (file.size > 5000000) {
+            toast?.error("File size is too big");
+            return Upload.LIST_IGNORE;
+        }
+        return true;
+    };
+
+    // @ts-ignore
+    // const handleChange = ({ fileList: newFileList }) => {
+    //     // Filtrer les fichiers trop volumineux
+    //     const filteredList = newFileList.filter((file: { size: number; }) => {
+    //         // Ignorer les fichiers avec une taille supérieure à 5 Mo
+    //         return file.size <= 5000000;
+    //     });
+    //
+    //     setFileList(filteredList);
+    // };
+
 
     //swr fetcher
     const {data:category ,error, isLoading, } = useSWR('/api/typepoint', fetcher)
@@ -159,16 +262,245 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
         },
     };
 
+
+
+    const cat  = category?.map((cat:any)=>({
+        value:cat.id,
+        label:cat.libelle
+    }))
+    //we add option "Other" with value 1
+    cat?.push({
+        value:1,
+        label:'Other'
+    })
+
+
+    const CustomDatePicker = () => {
+        const currentYear = new Date().getFullYear();
+        const startYear = -5000; // Exemple: commence 5000 ans avant J.-C.
+        const endYear = currentYear;
+
+        const [year, setYear] = useState(form.getFieldValue('year')||null);
+        const [month, setMonth] = useState(form.getFieldValue('month')||null);
+        const [day, setDay] = useState(form.getFieldValue('day')||null);
+
+        const handleYearChange = (value:any) => {
+            setYear(value);
+            setMonth(null);
+            setDay(null);
+        };
+
+        const handleMonthChange = (value:any) => {
+            setMonth(value);
+            setDay(null);
+        };
+
+        const handleDayChange = (value:any) => {
+            setDay(value);
+        };
+
+        const getDaysInMonth = (year:any, month:any) => {
+            return new Date(year, month, 0).getDate();
+        };
+
+
+        return (<>
+
+        <Form.Item
+            label={yearMode === 'precise' ? "Year of item :" : "Approximate year of item. Between..."}
+        >
+            <Space align='center'>
+                <Form.Item
+                    name="year"
+                    rules={[
+                        { required: true, message: 'Please select a year!' },
+                        ({ getFieldValue }) => ({
+                            validator(_, value) {
+                                if(yearMode !== 'estimate') return Promise.resolve();
+                                if (!value || getFieldValue('yearAfter') < value) {
+                                    return Promise.resolve();
+                                }
+                                return Promise.reject(new Error('The year must be less than the second date!'));
+                            },
+                        }),
+                    ]}
+                >
+                    <Select
+                        style={{ width: 100 }}
+                        showSearch
+                        allowClear
+                        onClear={() => {
+                            setYear(null);
+                            setMonth(null);
+                            setDay(null);
+                        }}
+                        placeholder="Year"
+                        onChange={handleYearChange}
+                        filterOption={(input, option) =>
+                            // @ts-ignore
+                            option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                        }
+                    >
+                        {Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i).map((year) => (
+                            <Option key={year} value={year}>
+                                {year > 0 ? `${year} AD` : `${Math.abs(year)} BC`}
+                            </Option>
+                        ))}
+                    </Select>
+                </Form.Item>
+
+                <Form.Item
+
+                    name="month"
+                >
+                    <Select
+                        style={{ width: 100 }}
+                        allowClear placeholder="Month" onChange={handleMonthChange} disabled={form.getFieldValue('year') === undefined}>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                            <Option allowClear key={month} value={month}>{month}</Option>
+                        ))}
+                    </Select>
+                </Form.Item>
+
+                <Form.Item
+
+                    name="day"
+                    style={{ width: 100 }}
+                >
+                    <Select allowClear placeholder="Day" onChange={handleDayChange} disabled={form.getFieldValue('month') === undefined}>
+                        {year && month && Array.from({ length: getDaysInMonth(year, month) }, (_, i) => i + 1).map((day) => (
+                            <Option key={day} value={day}>{day}</Option>
+                        ))}
+                    </Select>
+                </Form.Item>
+
+                <Form.Item
+                    name={"dateMode"}
+                >
+                    <Checkbox
+                        style={{width: 200}}
+                        onChange={()=>{
+                            if(yearMode === 'precise'){
+                                setYearMode('estimate')
+                            }else{
+                                setYearMode('precise')
+                            }}}
+                        checked={yearMode === 'estimate'}
+                    >
+                        Unknow age of item
+                    </Checkbox>
+
+                </Form.Item>
+            </Space>
+        </Form.Item>
+                {yearMode === 'estimate' &&
+                    <Form.Item
+                        label={"And..."}
+                    >
+                        <Space align='center'>
+
+                            <Form.Item
+
+                                name="yearAfter"
+                                rules={[
+                                    { required: true, message: 'Please select a year!' },
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            if (!value || getFieldValue('year') > value) {
+                                                return Promise.resolve();
+                                            }
+                                            return Promise.reject(new Error('The year must be more than the first date!'));
+                                        },
+                                    }),
+                                ]}
+                            >
+                                <Select
+                                    style={{ width: 100 }}
+                                    showSearch
+                                    allowClear
+                                    onClear={() => {
+                                        setYear(null);
+                                        setMonth(null);
+                                        setDay(null);
+                                    }}
+                                    placeholder="Year"
+                                    onChange={handleYearChange}
+                                    filterOption={(input, option) =>
+                                        // @ts-ignore
+                                        option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                                    }
+                                >
+                                    {Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i).map((year) => (
+                                        <Option key={year} value={year}>
+                                            {year > 0 ? `${year} AD` : `${Math.abs(year)} BC`}
+                                        </Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+
+                            <Form.Item
+
+                                name="monthAfter"
+                            >
+                                <Select
+                                    style={{ width: 100 }}
+                                    allowClear placeholder="Month" onChange={handleMonthChange} disabled={form.getFieldValue('year') === undefined}>
+                                    {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                                        <Option allowClear key={month} value={month}>{month}</Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+
+                            <Form.Item
+                                name="dayAfter"
+                                style={{ width: 100 }}
+                            >
+                                <Select allowClear placeholder="Day" onChange={handleDayChange} disabled={form.getFieldValue('month') === undefined}>
+                                    {year && month && Array.from({ length: getDaysInMonth(year, month) }, (_, i) => i + 1).map((day) => (
+                                        <Option key={day} value={day}>{day}</Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+                        </Space>
+                    </Form.Item>
+                }
+            </>
+        );
+    };
+
+
+    useEffect(() => {
+        if(form.getFieldValue('title') === "" || form.getFieldValue('title') === undefined) {
+            console.log('uploadableFiles title', false)
+            setUploadableFiles(false)
+        }else{
+            console.log('uploadableFiles title', true)
+            setUploadableFiles(true)
+        }
+    }, [form]);
+
+
     return(<Form
+        onChange={debounce(() => {
+            //store form data in localstorage
+            localStorage.setItem('form', JSON.stringify(form.getFieldsValue()));
+        }, 1000)}
         form={form}
         scrollToFirstError
-        onValuesChange={(changedValues, allValues) => {
-            console.log(allValues);
-        }}
+        onValuesChange={debounce(() => {
+            if(form.getFieldValue('title') !== "" && form.getFieldValue('title') !== undefined) {
+                console.log('uploadableFiles title', true)
+                setUploadableFiles(true)
+            }else{
+                console.log('uploadableFiles title', false)
+                setUploadableFiles(false)
+            }
+            localStorage.setItem('form', JSON.stringify(form.getFieldsValue()));
+        }, 1000)}
         layout="vertical"
 
         >
-        <Divider orientation="left">Cordinate</Divider>
+        <Divider orientation="left">Coordinate</Divider>
         <div className="flex justify-center gap-4">
             {/*LATTITUDE LONGITUDE*/}
             <Form.Item
@@ -220,10 +552,7 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
                             setNewCategory(false)
                         }
                     }}
-                    options={category?.map((cat:any)=>({
-                        value:cat.id,
-                        label:cat.libelle
-                    }))}
+                    options={cat}
                 />
         </Form.Item>
 
@@ -249,7 +578,13 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
                }]}
 
                    name="title">
-                  <Input className='rounded-full' />
+                  <Input
+                      onChange={(e)=>{
+                            if(e.target.value === ""){
+                               form.setFieldValue('title', undefined)
+                            }
+                      }}
+                      className='rounded-full' />
                </Form.Item>
 
                 {/*DATE OF DISCOVERY*/}
@@ -260,6 +595,7 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
                         required: true,
                         message: 'Please input year of discovery!'
                     }]}
+
                 >
                     <DatePicker
                         disabledDate={(current) => {
@@ -271,78 +607,11 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
 
                    <Divider orientation="left">
                        <Tooltip
-                           title={"date of item "}>Date of item
+                           title={"date of item "}>Age of item
                        </Tooltip>
                    </Divider>
+                    {CustomDatePicker()}
                  <Space className="flex align-middle flex-row items-center">
-                     {/*SWITCH SELECT YEAR MODE*/}
-                     {yearMode === 'precise' ?
-                     <Form.Item
-                         name="year"
-                        rules={[{
-                                required: true,
-                                message: 'Please input year!'
-                            }]}
-
-                     >
-                         <DatePicker
-                             disabledDate={(current) => {
-                                 return current && current > dayjs()
-                             }}
-                             placeholder='Select the date of item'/>
-                     </Form.Item>
-                     :
-                     <div className='flex align-middle gap-4'>
-                         <Form.Item
-                                    name="ApproximateYearBefore"
-                                    rules={[{
-                                        required: true,
-                                        message: 'Please input year!'
-                                    },
-                                        ({ getFieldValue }) => ({
-                                            validator(_, value) {
-                                                if (!value || getFieldValue('ApproximateYearAfter') > value) {
-                                                    return Promise.resolve();
-                                                }
-                                                return Promise.reject(new Error('The year must be less than the year after!'));
-                                            },
-                                        }),
-                                    ]}
-                         >
-                             <DatePicker
-                                 disabledDate={(current) => {
-                                     return current && current > dayjs()
-                                 }}
-                                 picker="year"
-                                 placeholder='Between...'/>
-
-                         </Form.Item>
-                         <Form.Item
-                                    name="ApproximateYearAfter">
-                             <DatePicker
-                                 picker="year"
-                                 disabledDate={(current) => {
-                                     return current && current > dayjs()
-                                 }}
-                                 placeholder='and'/>
-                         </Form.Item>
-                     </div>
-                     }
-
-
-                     <Form.Item>
-                         <Checkbox  onChange={()=>{
-                             if(yearMode === 'precise'){
-                                 setYearMode('estimate')
-                             }else{
-                                 setYearMode('precise')
-                             }}}
-                                    checked={yearMode === 'estimate'}
-                         >
-                             Unknow date of item
-                         </Checkbox>
-                     </Form.Item>
-
                </Space>
                 {/*DESCRIPTION*/}
                 <Divider orientation="left">
@@ -428,32 +697,54 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
                 </>
             )}
         </Form.List>
-
-
                 <Divider>
                     <Tooltip
                         title={"date of item "}>Images
                     </Tooltip>
                 </Divider>
-                <Form.Item>
+                {/*UPLOAD*/}
+                <Form.Item name='files'>
                     <p>Max image size : 5mb</p>
                     <Upload
+                        name={'file'}
+                        disabled={!uploadableFiles}
                         //accept only jpeg and png
                         accept='.jpg,.png'
-                        beforeUpload={(file) => {
-
-                            console.log("size",file.size)
-                          //check file size
-                            if(file.size > 5000000){
-                                toast?.error("File size is too big")
-                                return false
-                            }
-                        }}
+                        action={`/api/image-upload?uuid=${form.getFieldValue('uuid')}&title=${form.getFieldValue('title')}`}
+                        beforeUpload={beforeUpload}
                         listType="picture-card"
                         fileList={fileList}
                         maxCount={5}
                         onPreview={handlePreview}
-                        onChange={handleChange}
+                        // onChange={handleChange}
+                        onRemove={(file)=>{
+                            fetch(`/api/delete-uploaded-image?id=${file.uid}`, {
+                                method: 'DELETE',
+                            })
+                                .then(response => {
+                                    console.log('response',response)
+                                    if(response.ok){
+                                        toast?.success("File deleted")
+                                        setFileList(fileList.filter((item) => item.uid !== file.uid));
+                                    }
+                                    return response.json()
+                                })
+                                .then(data => {
+                                    if(data.error){
+                                        console.log(data)
+                                        toast?.error(data.error)
+                                    }
+
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error)
+                                    toast?.error("Error")
+                                    // @ts-ignore
+
+                                });
+                        }}
+                        multiple
+
                     >
                         {fileList.length >= 8 ? null : uploadButton}
                     </Upload>
@@ -472,7 +763,11 @@ export default function CreatePointForm({markerPosition , setMarkerPosition, clo
                     <button onClick={handleSubmit} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">
                         Submit
                     </button>
-
+                </Form.Item>
+                <Form.Item hidden name='uuid'>
+                    <Input hidden  />
                 </Form.Item>
            </Form>)
 }
+
+
